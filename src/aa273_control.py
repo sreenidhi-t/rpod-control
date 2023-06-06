@@ -90,7 +90,7 @@ def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps
     s_cvx = cp.Variable((N + 1, n))
     u_cvx = cp.Variable((N, m))
     s0 = s_current
-    u_max = 0.010
+    u_max = 0.50 # Newtons
 
     objective = cp.quad_form((s_cvx[N] - s_goal), P)
     constraints = [s_cvx[0] == s0]

@@ -90,10 +90,13 @@ def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps
     s_cvx = cp.Variable((N + 1, n))
     u_cvx = cp.Variable((N, m))
     s0 = s_current
+    ru = 10
 
     objective = cp.quad_form((s_cvx[N] - s_goal), P) + cp.sum([(cp.quad_form((s_cvx[k] - s_goal), Q) + cp.quad_form(u_cvx[k], R)) for k in range(N)])
     constraints = [s_cvx[0] == s0]
     constraints += [(s_cvx[k + 1] == A[k]@s_cvx[k] + B[k]@u_cvx[k]) for k in range(N)]
+    constraints += [cp.norm(u_cvx[i], 'inf') <= ru for i in range(N)]
+
     prob = cp.Problem(cp.Minimize(objective), constraints)
 
     # ------- SCP Solve-------- #
@@ -104,18 +107,25 @@ def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps
     count = 0
     for i in range(max_iters):
         # prob.solve(warm_start=True)
-        prob.solve()
+        prob.solve(solver = 'ECOS')
         s, u, J[i + 1] = s_cvx.value, u_cvx.value, prob.objective.value
+        print('s: ', s)
+        print('u: ', u)
 
         dJ = np.abs(J[i + 1] - J[i])
         count += 1
+        status = prob.status
+        print(prob.status)
+        if status == 'infeasible':
+            print('SCP is infeasible')
+            break
         if dJ < eps:
             converged = True
             break
     
-    print(f"Converged in {count} iterations")
+    print(f"Converged in {count} iterationss")
     if not converged:
-        raise RuntimeError('SCP did not converge!')
+        raise RuntimeError('SCP did not converge! dJ = ' + str(dJ))
 
     return s, u
 

@@ -102,6 +102,7 @@ def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps
         constraints += [(s_cvx[k + 1] == A[k]@s_cvx[k] + B[k]@u_cvx[k])]
         # constraints += [e[k + 1] = A_e[k]@e[k] + B_e[k]@u_cvx[k]]
         constraints += [cp.norm(u_cvx[k], 'inf') <= u_max]
+        
         # constraints += [e[k] == s_cvx[k] - s_goal]
     # constraints = [s_cvx[0] == s0]
     # constraints += [(s_cvx[k + 1] == A[k]@s_cvx[k] + B[k]@u_cvx[k]) for k in range(N)]

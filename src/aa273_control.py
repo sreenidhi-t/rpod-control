@@ -33,7 +33,7 @@ def dynamics(dt, N, mean_motion, mass):
 
     for k in range(N):
         # print("hi")
-        Anew, Bnew = state_space(k*dt, mean_motion, mass)
+        Anew, Bnew = state_space(dt, mean_motion, mass)
         A.append(Anew)
         B.append(Bnew)
         
@@ -57,6 +57,8 @@ def straight_line_traj(s_start, s_goal, T):
 
     s = np.hstack((sx[:, None], sy[:, None], sz[:, None], vx[:, None], vy[:, None], vz[:, None]))
     return s
+
+# def error_dynamics(dt, )
 
 # %%
 def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps):
@@ -91,13 +93,16 @@ def do_MPC(dt, chaser_n, chaser_m, s_current, s_goal, N, Q, R, P, max_iters, eps
     u_cvx = cp.Variable((N, m))
     s0 = s_current
     u_max = 0.50 # Newtons
+    e = np.zeros_like(s_cvx)
 
     objective = cp.quad_form((s_cvx[N] - s_goal), P)
     constraints = [s_cvx[0] == s0]
     for k in range(N):
         objective += cp.quad_form((s_cvx[k] - s_goal), Q) + cp.quad_form(u_cvx[k], R)
         constraints += [(s_cvx[k + 1] == A[k]@s_cvx[k] + B[k]@u_cvx[k])]
+        # constraints += [e[k + 1] = A_e[k]@e[k] + B_e[k]@u_cvx[k]]
         constraints += [cp.norm(u_cvx[k], 'inf') <= u_max]
+        # constraints += [e[k] == s_cvx[k] - s_goal]
     # constraints = [s_cvx[0] == s0]
     # constraints += [(s_cvx[k + 1] == A[k]@s_cvx[k] + B[k]@u_cvx[k]) for k in range(N)]
     # constraints += [cp.norm(u_cvx[i], 'inf') <= u_max for i in range(N)]
